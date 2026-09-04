@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --primary: #ff6a3d;
+  --primary-dark: #e85a2f;
+  --cta: #16a34a;
+  --cta-dark: #15803d;
+  --page: #f3f4f6;
+  --ink: #1a1a1a;
+  --muted: #6b7280;
+  --off: #e11d48;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--ink);
+  background: var(--page);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .page-shell {
+    @apply relative mx-auto min-h-screen max-w-md overflow-hidden px-0 pb-28;
+    background:
+      radial-gradient(ellipse 90% 55% at 12% -5%, rgba(255, 255, 255, 0.85) 0%, transparent 55%),
+      radial-gradient(ellipse 80% 50% at 95% 18%, rgba(229, 231, 235, 0.55) 0%, transparent 50%),
+      radial-gradient(ellipse 70% 40% at 50% 100%, rgba(209, 213, 219, 0.28) 0%, transparent 55%),
+      linear-gradient(165deg, #f8f9fa 0%, #f5f5f5 38%, #f3f4f6 72%, #eef0f2 100%);
+  }
+
+  .glass-card {
+    @apply rounded-[28px] border border-white/70 bg-white/60 shadow-clay backdrop-blur-xl;
+  }
+
+  .btn-cta {
+    @apply w-full rounded-full bg-gradient-to-b from-[#22C55E] to-cta px-5 py-3.5 text-[15px] font-extrabold text-white shadow-[0_14px_28px_rgba(22,163,74,.38)];
+  }
+
+  .btn-cta:active {
+    transform: scale(0.98);
+  }
+
+  .btn-primary {
+    @apply w-full rounded-full bg-gradient-to-b from-primary to-primary-dark px-5 py-3.5 text-[15px] font-extrabold text-white shadow-[0_14px_28px_rgba(255,106,61,.35)];
+  }
+
+  .field {
+    @apply flex items-center gap-2.5 rounded-[18px] border-[1.5px] border-slate-200/95 bg-white/70 px-3.5 py-3 shadow-[inset_0_1px_0_#fff,0_8px_18px_rgba(15,23,42,.04)];
+  }
+
+  .field:focus-within {
+    @apply border-orange-300/75;
+    box-shadow: 0 0 0 3px rgba(255, 106, 61, 0.12), inset 0 1px 0 #fff;
+  }
+
+  .field input,
+  .field select {
+    @apply w-full border-0 bg-transparent text-sm font-semibold text-ink outline-none;
+  }
+
+  .badge-off {
+    @apply rounded-full bg-off px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white;
+  }
+
+  .badge-on {
+    @apply rounded-full border border-green-300/55 bg-green-100/75 px-2.5 py-1 text-[10px] font-extrabold text-cta-dark;
+  }
+}
