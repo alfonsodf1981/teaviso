@@ -1,30 +1,30 @@
 # TeAviso MVP
 
-Monitor de precios MX. Email+push only.
+Monitor de precios MX. Email + push only. Nunca WhatsApp. Tono amigo MX.
 
-Tono MX amigo. Colores brand documentados en Tailwind.
+UI soft-3D: fondo #F3F4F6, acento naranja #FF6A3D, CTA verde #16A34A, cards glass con sombra suave, mascota V2 en /public/mascot.png. Navegacion: tabs de categoria arriba (icono + underline) + FAB verde Crear alerta (sin BottomNav).
 
 ## Stack
-- Next.js App Router + TypeScript + Tailwind
+- Next.js + TypeScript + Tailwind
 - Prisma + SQLite
-- NextAuth email magic link (+ demo login si faltan keys de correo)
-- Job scripts/check-alerts.ts cada 6 horas
+- NextAuth magic link
+- Job check-alerts cada 6 horas
 
 ## Setup
-1. Copia .env.example a .env
-2. Instala dependencias del package.json
-3. prisma db push (script db:push)
-4. next dev (script dev)
+1. Copia env.example al archivo de entorno local
+2. Instala dependencias
+3. prisma db push
+4. next dev
 5. Abre http://localhost:3000
 
 ## Auth / correo
-Variables: NEXTAUTH_URL, NEXTAUTH_SECRET, DATABASE_URL.
-Para envio real: clave de Resend (RESEND_API_KEY) o EMAIL_SERVER SMTP, y EMAIL_FROM.
-Sin esas keys: modo DEMO — login con cualquier email, sin envio real (banner en UI, logs DEMO AUTH).
+Vars: NEXTAUTH_URL, NEXTAUTH_SECRET, DATABASE_URL.
+Envio real: RESEND_API_KEY o EMAIL_SERVER + EMAIL_FROM.
+Sin keys: modo DEMO.
 
 ## Paginas
 - / home
-- /crear alerta
+- /crear
 - /confirm
 - /mis-alertas
 - /editar/[id]
@@ -34,19 +34,25 @@ Sin esas keys: modo DEMO — login con cualquier email, sin envio real (banner e
 Campos: product, category, targetPrice, emailOn, pushOn, paused.
 API: GET/POST /api/alerts y GET/PATCH/DELETE /api/alerts/[id].
 
-## PriceFetcher + job
-Interfaz + MockPriceFetcher en src/lib/price-fetcher.ts.
-Job: script check-alerts (package script check-alerts).
-Programar cada 6 horas con cron del sistema, systemd timer o similar.
-Ejemplo crontab (minuto 0, cada 6 horas): ver comentario en scripts/check-alerts.ts
+## PriceFetcher stub
+MockPriceFetcher en src/lib/price-fetcher.ts es un STUB: precios mock deterministas.
+
+Siguiente paso: scrapers/APIs reales de marketplaces MX (reemplazar el mock detras de la interfaz PriceFetcher). El job check-alerts ya usa la interfaz.
+
+## Browser push stub/skeleton
+El flag pushOn se guarda y se muestra en UI; esqueleto en src/lib/push.ts.
+
+No hay service worker, VAPID ni envio Web Push todavia.
+
+Siguiente paso: implementar push del navegador DESPUES de que el email funcione bien.
 
 ## Email template
-HTML en src/lib/email-templates.ts (priceHitEmailHtml) cuando el precio llega al objetivo.
+HTML en src/lib/email-templates.ts (priceHitEmailHtml).
 
-## Scripts package
+## Scripts
 - dev / build / start
 - db:push / db:studio
 - check-alerts
 
-## Repo destino
-https://github.com/alfonsodf1981/teaviso — este scaffold no hace push; el parent configura auth y pushea.
+## Repo
+https://github.com/alfonsodf1981/teaviso

@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BrandHeader } from "@/components/BrandHeader";
+import { TopChrome } from "@/components/TopChrome";
 import { DemoBanner } from "@/components/DemoBanner";
-import { CATEGORIES } from "@/lib/categories";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
@@ -14,20 +13,23 @@ export default async function HomePage() {
 
   return (
     <>
-      <BrandHeader />
+      <TopChrome />
       <DemoBanner />
 
       <main className="px-3.5 pt-2">
         <section className="glass-card relative overflow-hidden p-5 text-center">
-          <div className="pointer-events-none absolute inset-x-8 top-6 h-36 rounded-full bg-primary/15 blur-2xl" />
+          <div className="pointer-events-none absolute inset-x-6 top-4 h-40 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,106,61,.22),rgba(209,213,219,.35)_45%,transparent_70%)] blur-md" />
           <Image
             src="/mascot.png"
             alt="Mascota TeAviso"
-            width={120}
-            height={120}
-            className="relative mx-auto drop-shadow-[0_12px_24px_rgba(255,106,61,.35)]"
+            width={132}
+            height={132}
+            className="relative mx-auto drop-shadow-[0_18px_32px_rgba(255,106,61,.38)]"
             priority
           />
+          <p className="relative mt-1 inline-block rounded-full border border-orange-200/70 bg-orange-50/80 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary-dark">
+            Amigo · MX
+          </p>
           <h1 className="relative mt-2 text-[22px] font-extrabold tracking-tight">
             Órale, yo te aviso
           </h1>
@@ -54,22 +56,19 @@ export default async function HomePage() {
           )}
         </section>
 
-        <section className="mt-5">
-          <h2 className="mb-2 px-1 text-[11px] font-extrabold uppercase tracking-wider text-muted">
-            Categorías
-          </h2>
-          <div className="flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {CATEGORIES.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/crear?categoria=${cat.id}`}
-                className="flex min-w-[86px] flex-col items-center gap-1 rounded-full border border-white/65 bg-white/40 px-3.5 py-2.5 text-[11px] font-bold text-muted shadow-soft backdrop-blur"
-              >
-                <span className="text-lg">{cat.emoji}</span>
-                {cat.label}
-              </Link>
-            ))}
-          </div>
+        <section className="amigo-glass mt-4 flex items-start gap-2.5 p-3.5">
+          <Image
+            src="/mascot.png"
+            alt=""
+            width={44}
+            height={44}
+            className="shrink-0 drop-shadow-[0_8px_12px_rgba(255,106,61,.25)]"
+          />
+          <p className="m-0 text-[13px] font-medium leading-snug text-ink">
+            <strong className="text-primary-dark">Soy TeAviso.</strong> Dime qué
+            vigilar y te aviso por email (y push cuando esté listo). No vendo
+            nada — solo te cuido el precio.
+          </p>
         </section>
 
         <section className="mt-4 space-y-3">

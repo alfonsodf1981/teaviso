@@ -125,7 +125,7 @@ export function CreateAlertForm() {
           />
         </label>
         <p className="text-[11px] font-medium text-muted">
-          Nunca WhatsApp. Solo los canales que actives.
+          Nunca WhatsApp. Solo los canales que actives. Push del navegador es stub por ahora — primero afinamos el email.
         </p>
       </div>
 

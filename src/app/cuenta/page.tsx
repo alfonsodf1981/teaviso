@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Suspense } from "react";
-import { BrandHeader } from "@/components/BrandHeader";
+import { TopChrome } from "@/components/TopChrome";
 import { LoginForm } from "@/components/LoginForm";
 import { isDemoAuthMode } from "@/lib/auth";
 import { getSession } from "@/lib/session";
@@ -11,16 +11,16 @@ export default async function CuentaPage() {
 
   return (
     <>
-      <BrandHeader subtitle="Tu cuenta" showChannels={false} />
+      <TopChrome subtitle="Tu cuenta" showChannels={false} />
 
       <main className="px-0 pt-1">
         <div className="px-3.5 text-center">
           <Image
             src="/mascot.png"
             alt=""
-            width={88}
-            height={88}
-            className="mx-auto"
+            width={96}
+            height={96}
+            className="mx-auto drop-shadow-[0_12px_22px_rgba(255,106,61,.32)]"
           />
           <h1 className="mt-2 text-[20px] font-extrabold tracking-tight">
             {session?.user ? "Tu espacio" : "Entra, amigo"}

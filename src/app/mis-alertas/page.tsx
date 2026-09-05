@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { AlertCard } from "@/components/AlertCard";
-import { BrandHeader } from "@/components/BrandHeader";
+import { TopChrome } from "@/components/TopChrome";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 
@@ -14,7 +14,7 @@ export default async function MisAlertasPage() {
 
   return (
     <>
-      <BrandHeader subtitle="Tus vigilancias" />
+      <TopChrome subtitle="Tus vigilancias" />
 
       <main className="px-3.5 pt-2">
         <div className="mb-3 flex items-center justify-between px-1">
@@ -32,13 +32,13 @@ export default async function MisAlertasPage() {
             <Image
               src="/mascot.png"
               alt=""
-              width={96}
-              height={96}
-              className="mx-auto opacity-90"
+              width={108}
+              height={108}
+              className="mx-auto drop-shadow-[0_14px_24px_rgba(255,106,61,.3)]"
             />
             <h2 className="mt-3 text-base font-extrabold">Aún no hay nada</h2>
             <p className="mx-auto mt-1 max-w-[28ch] text-sm font-medium text-muted">
-              Crea tu primera alerta y yo me encargo de vigilar el precio.
+              Crea tu primera alerta y yo me encargo de vigilar el precio, amigo.
             </p>
             <Link href="/crear" className="btn-cta mt-5 inline-block">
               Crear alerta

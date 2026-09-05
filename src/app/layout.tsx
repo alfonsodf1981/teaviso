@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import { BottomNav } from "@/components/BottomNav";
+import { CreateAlertFab } from "@/components/CreateAlertFab";
 
 export const metadata: Metadata = {
   title: "TeAviso — Te aviso cuando baje",
@@ -19,7 +19,7 @@ export default function RootLayout({
         <Providers>
           <div className="page-shell">
             {children}
-            <BottomNav />
+            <CreateAlertFab />
           </div>
         </Providers>
       </body>
