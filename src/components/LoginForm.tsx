@@ -138,12 +138,9 @@ export function LoginForm({
         <span className="rounded-full border border-green-300/55 bg-green-100/75 px-2.5 py-1 text-[11px] font-bold text-cta-dark">
           Push
         </span>
-        <span className="rounded-full border border-slate-200 bg-white/55 px-2.5 py-1 text-[11px] font-bold text-muted line-through">
-          WhatsApp
-        </span>
       </div>
       <p className="mt-3 text-center text-[11px] font-medium leading-relaxed text-muted">
-        TeAviso no vende productos. Solo te avisamos cuando baje el precio.
+        Solo email y push. TeAviso no vende productos — solo te avisamos cuando baje el precio.
       </p>
     </form>
   );

@@ -43,6 +43,31 @@ if (!isDemoAuthMode()) {
       server: buildEmailServer(),
       from: process.env.EMAIL_FROM || "TeAviso <onboarding@resend.dev>",
       maxAge: 24 * 60 * 60,
+      subject: () => "Tu acceso a TeAviso — entra con este link",
+      text: ({ url }) =>
+        [
+          "Hola,",
+          "",
+          "Aquí tienes tu link para entrar a TeAviso (válido 24 horas):",
+          url,
+          "",
+          "Si no pediste esto, ignora el correo.",
+          "Solo te avisamos por email y push — nunca por WhatsApp.",
+          "",
+          "— TeAviso",
+        ].join("\n"),
+      html: ({ url }) => `<!DOCTYPE html>
+<html lang="es-MX"><body style="font-family:system-ui,sans-serif;background:#F3F4F6;padding:24px;color:#1A1A1A">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 24px rgba(0,0,0,.06)">
+    <p style="font-size:18px;font-weight:700;margin:0 0 8px">Tu acceso a TeAviso</p>
+    <p style="margin:0 0 20px;line-height:1.5;color:#4B5563">Toca el botón para entrar. El link dura 24 horas. Sin contraseñas.</p>
+    <p style="text-align:center;margin:0 0 20px">
+      <a href="${url}" style="display:inline-block;background:#16A34A;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px">Entrar a TeAviso</a>
+    </p>
+    <p style="font-size:12px;color:#6B7280;line-height:1.5;margin:0">Si el botón no funciona, copia este link:<br/><a href="${url}" style="color:#FF6A3D;word-break:break-all">${url}</a></p>
+    <p style="font-size:12px;color:#6B7280;margin:16px 0 0">Si no pediste esto, ignora el correo. Solo email y push — nunca WhatsApp.</p>
+  </div>
+</body></html>`,
     })
   );
 } else {

@@ -34,10 +34,21 @@ Sin keys: modo DEMO.
 Campos: product, category, targetPrice, emailOn, pushOn, paused.
 API: GET/POST /api/alerts y GET/PATCH/DELETE /api/alerts/[id].
 
-## PriceFetcher stub
-MockPriceFetcher en src/lib/price-fetcher.ts es un STUB: precios mock deterministas.
+## PriceFetcher (Mercado Libre MX)
+`src/lib/price-fetcher.ts` — interfaz `PriceFetcher` + `MockPriceFetcher` + `MercadoLibreMxPriceFetcher` (híbrido).
 
-Siguiente paso: scrapers/APIs reales de marketplaces MX (reemplazar el mock detras de la interfaz PriceFetcher). El job check-alerts ya usa la interfaz.
+Comportamiento real (`createPriceFetcher()` / `priceFetcher`):
+1. Si el producto es URL de mercadolibre.com.mx o id `MLM…` → API `items` / `products`.
+2. Si no → API `sites/MLM/search`, y si falla → HTML de `listado.mercadolibre.com.mx/{slug}`.
+3. Si todo falla → `null` (con un `console.warn`).
+
+**Limitación honesta:** desde IPs serverless / datacenter la search API suele devolver **403** y el listado redirige a **account-verification** (bot wall). Sin app token de ML, en producción a menudo no hay precio. Workarounds MVP: pegar la URL o id MLM del producto como nombre, o demos con mock.
+
+Env:
+- `PRICE_FETCHER=mock` o `USE_MOCK_PRICES=1` → mock determinista (demos / local sin red).
+- Default → `MercadoLibreMxPriceFetcher`.
+
+Siguiente paso: app token oficial de Mercado Libre para search estable.
 
 ## Browser push stub/skeleton
 El flag pushOn se guarda y se muestra en UI; esqueleto en src/lib/push.ts.

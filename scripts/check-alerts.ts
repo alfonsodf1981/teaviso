@@ -5,14 +5,14 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { MockPriceFetcher } from "../src/lib/price-fetcher";
+import { createPriceFetcher } from "../src/lib/price-fetcher";
 import {
   priceHitEmailHtml,
   priceHitEmailSubject,
 } from "../src/lib/email-templates";
 
 const prisma = new PrismaClient();
-const fetcher = new MockPriceFetcher();
+const fetcher = createPriceFetcher();
 const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 
