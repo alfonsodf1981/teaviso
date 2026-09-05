@@ -6,14 +6,14 @@ UI soft-3D: fondo #F3F4F6, acento naranja #FF6A3D, CTA verde #16A34A, cards glas
 
 ## Stack
 - Next.js + TypeScript + Tailwind
-- Prisma + SQLite
+- Prisma + PostgreSQL (required for Vercel; SQLite will not work on serverless)
 - NextAuth magic link
 - Job check-alerts cada 6 horas
 
 ## Setup
 1. Copia env.example al archivo de entorno local
 2. Instala dependencias
-3. prisma db push
+3. Set DATABASE_URL to Postgres, then prisma db push
 4. next dev
 5. Abre http://localhost:3000
 
@@ -53,6 +53,13 @@ HTML en src/lib/email-templates.ts (priceHitEmailHtml).
 - dev / build / start
 - db:push / db:studio
 - check-alerts
+
+
+## Deploy (Vercel)
+1. Set env in Vercel: `NEXTAUTH_URL` (https://your-app.vercel.app), `NEXTAUTH_SECRET` (32+ random chars), `DATABASE_URL` (Postgres connection string with ssl).
+2. Optional email: `RESEND_API_KEY` + `EMAIL_FROM`, or `EMAIL_SERVER` + `EMAIL_FROM`. Without them, Demo auth is active — check Vercel logs for `[DEMO AUTH]` magic links.
+3. After first deploy, run migrations against prod DB: `npx prisma db push` with production `DATABASE_URL`.
+4. Claim any temporary Prisma Postgres DB via the claim URL so it is not deleted after 24h.
 
 ## Repo
 https://github.com/alfonsodf1981/teaviso
