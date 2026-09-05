@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
@@ -28,6 +29,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   const alert = await ownedAlert(session.user.id, id);
   if (!alert) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  revalidatePath("/mis-alertas");
   return NextResponse.json(alert);
 }
 
@@ -52,6 +54,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     where: { id },
     data: parsed.data,
   });
+  revalidatePath("/mis-alertas");
   return NextResponse.json(alert);
 }
 
@@ -64,5 +67,6 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const existing = await ownedAlert(session.user.id, id);
   if (!existing) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
   await prisma.alert.delete({ where: { id } });
+  revalidatePath("/mis-alertas");
   return NextResponse.json({ ok: true });
 }

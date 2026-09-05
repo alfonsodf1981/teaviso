@@ -49,6 +49,13 @@ Errores → `null` + `console.warn` (no throw). Timeout ~12s, User-Agent navegad
 
 Opcional: `CRON_SECRET` protege `POST/GET /api/cron/check-alerts`. App ML: https://developers.mercadolibre.com.mx/
 
+## Categorías
+Incluye Electrónica… + **Viajes** (`travel`) + **Autos** (`autos`). Sin cotización muestra “Sin cotización” (no inventa precio).
+
+## PriceFetcher chain
+ML (token) → Liverpool → Walmart MX / Coppel / Elektra / Amazon.com.mx.
+Viajes: stubs Despegar/Skyscanner (null). Autos: stubs Kavak/Seminuevos/ML Autos/Autocosmos (null).
+
 ## Browser push stub/skeleton
 El flag pushOn se guarda y se muestra en UI; esqueleto en src/lib/push.ts.
 

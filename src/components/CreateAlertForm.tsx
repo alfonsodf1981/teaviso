@@ -42,6 +42,7 @@ export function CreateAlertForm() {
       }
       const alert = await res.json();
       router.push(`/confirm?id=${alert.id}`);
+      router.refresh();
     } catch {
       setError("Error de red, inténtalo de nuevo");
     } finally {

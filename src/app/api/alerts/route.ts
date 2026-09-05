@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 const createSchema = z.object({
@@ -44,5 +45,6 @@ export async function POST(req: Request) {
       ...parsed.data,
     },
   });
+  revalidatePath("/mis-alertas");
   return NextResponse.json(alert, { status: 201 });
 }

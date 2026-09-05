@@ -511,15 +511,68 @@ export class LiverpoolMxPriceFetcher implements PriceFetcher {
   }
 }
 
+
+import {
+  amazonMxFetcher,
+  autocosmosStub,
+  coppelFetcher,
+  despegarStub,
+  elektraFetcher,
+  kavakStub,
+  mlAutosStub,
+  seminuevosStub,
+  skyscannerStub,
+  walmartMxFetcher,
+} from "./price-sources-extra";
+
 export class MxPriceFetcher implements PriceFetcher {
   private ml = new MercadoLibreMxPriceFetcher();
   private liverpool = new LiverpoolMxPriceFetcher();
+  private retail = [walmartMxFetcher, coppelFetcher, elektraFetcher, amazonMxFetcher];
+  private travelStubs = [despegarStub, skyscannerStub];
+  private autosStubs = [kavakStub, seminuevosStub, mlAutosStub, autocosmosStub];
 
   async fetchPrice(product: string, category?: string): Promise<PriceQuote | null> {
+    const cat = (category || "").toLowerCase();
+    const gap = () => new Promise((r) => setTimeout(r, 350));
+
+    // Category-specific stubs first (still null-safe); then shared retail/ML.
+    if (cat === "travel" || cat === "viajes") {
+      for (const s of this.travelStubs) {
+        const q = await s.fetchPrice(product, category);
+        if (q) return q;
+        await gap();
+      }
+      // Travel rarely matches retail; still try ML then stop (avoid junk quotes).
+      const mlTravel = await this.ml.fetchPrice(product, category);
+      if (mlTravel) return mlTravel;
+      return null;
+    }
+
+    if (cat === "autos" || cat === "auto" || cat === "cars") {
+      for (const s of this.autosStubs) {
+        const q = await s.fetchPrice(product, category);
+        if (q) return q;
+        await gap();
+      }
+      const mlAutos = await this.ml.fetchPrice(product, category);
+      if (mlAutos) return mlAutos;
+      return null;
+    }
+
     const mlQuote = await this.ml.fetchPrice(product, category);
     if (mlQuote) return mlQuote;
-    await new Promise((r) => setTimeout(r, 400));
-    return this.liverpool.fetchPrice(product, category);
+    await gap();
+
+    const liv = await this.liverpool.fetchPrice(product, category);
+    if (liv) return liv;
+
+    for (const src of this.retail) {
+      await gap();
+      const q = await src.fetchPrice(product, category);
+      if (q) return q;
+    }
+    return null;
   }
 }
 
@@ -528,7 +581,7 @@ export function createPriceFetcher(): PriceFetcher {
   if (mode === "mock" || process.env.USE_MOCK_PRICES === "1") {
     return new MockPriceFetcher();
   }
-  // Default: real MX chain (ML → Liverpool). Prefer production intent.
+  // ML (+token) → Liverpool → Walmart/Coppel/Elektra/Amazon; travel/autos stubs null-safe.
   return new MxPriceFetcher();
 }
 

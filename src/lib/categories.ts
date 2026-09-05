@@ -6,6 +6,8 @@ export const CATEGORIES = [
   { id: "gaming", label: "Gaming", emoji: "🎮" },
   { id: "beauty", label: "Belleza", emoji: "✨" },
   { id: "sports", label: "Deportes", emoji: "⚽" },
+  { id: "travel", label: "Viajes", emoji: "✈️" },
+  { id: "autos", label: "Autos", emoji: "🚗" },
   { id: "other", label: "Otro", emoji: "📦" },
 ] as const;
 

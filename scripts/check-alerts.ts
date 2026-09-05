@@ -74,6 +74,10 @@ async function main() {
     const quote = await fetcher.fetchPrice(alert.product, alert.category);
     if (!quote) {
       console.warn(`  no quote for ${alert.product}`);
+      await prisma.alert.update({
+        where: { id: alert.id },
+        data: { lastChecked: new Date() },
+      });
       continue;
     }
 

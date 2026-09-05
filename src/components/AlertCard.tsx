@@ -49,11 +49,11 @@ export function AlertCard({ alert }: { alert: AlertCardData }) {
             {formatMxn(alert.targetPrice)}
           </div>
         </div>
-        {alert.currentPrice != null && (
-          <div className="text-right">
-            <div className="text-[10px] font-bold uppercase tracking-wide text-muted">
-              Último
-            </div>
+        <div className="text-right">
+          <div className="text-[10px] font-bold uppercase tracking-wide text-muted">
+            Último
+          </div>
+          {alert.currentPrice != null ? (
             <div
               className={`text-base font-extrabold ${
                 alert.currentPrice <= alert.targetPrice
@@ -63,8 +63,10 @@ export function AlertCard({ alert }: { alert: AlertCardData }) {
             >
               {formatMxn(alert.currentPrice)}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-sm font-bold text-muted">Sin cotización</div>
+          )}
+        </div>
       </div>
 
       <div className="mt-3 flex gap-2 text-[11px] font-semibold text-muted">

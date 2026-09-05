@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { RefreshLink } from "@/components/RefreshLink";
 import { redirect } from "next/navigation";
 import { categoryLabel } from "@/lib/categories";
 import { formatMxn } from "@/lib/format";
@@ -80,9 +81,9 @@ export default async function ConfirmPage({ searchParams }: Props) {
         </div>
 
         <div className="mt-5 space-y-3">
-          <Link href="/mis-alertas" className="btn-cta inline-block">
+          <RefreshLink href="/mis-alertas" className="btn-cta inline-block w-full">
             Ver mis alertas
-          </Link>
+          </RefreshLink>
           <Link
             href="/crear"
             className="inline-block w-full rounded-full border border-white/80 bg-white/60 px-5 py-3.5 text-[15px] font-bold text-ink shadow-soft backdrop-blur"

@@ -5,6 +5,8 @@ import { TopChrome } from "@/components/TopChrome";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 export default async function MisAlertasPage() {
   const user = await requireUser();
   const alerts = await prisma.alert.findMany({

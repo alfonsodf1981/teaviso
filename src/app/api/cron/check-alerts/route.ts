@@ -60,6 +60,10 @@ export async function GET(req: NextRequest) {
       checked++;
       if (!quote) {
         missing++;
+        await prisma.alert.update({
+          where: { id: alert.id },
+          data: { lastChecked: new Date() },
+        });
         continue;
       }
 
