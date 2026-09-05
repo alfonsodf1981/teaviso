@@ -39,11 +39,11 @@ API: GET/POST /api/alerts y GET/PATCH/DELETE /api/alerts/[id].
 Interfaz `PriceFetcher` / `PriceQuote` + `createPriceFetcher()` / `priceFetcher` en `src/lib/price-fetcher.ts`.
 
 **Default:** `MxPriceFetcher` (produccion):
-1. **Mercado Libre MX** — URL/id `MLM…` → API `items`/`products`; si no → `GET https://api.mercadolibre.com/sites/MLM/search?q=…&limit=20` (JSON publico). Si existe `MERCADOLIBRE_ACCESS_TOKEN`, se envia `Authorization: Bearer` (mejora cuotas; la search sigue pudiendo fallar).
+1. **Mercado Libre MX** — URL/id `MLM…` → API `items`/`products`; si no → `GET https://api.mercadolibre.com/sites/MLM/search?q=…&limit=20`. Auth via `getMeliAccessToken()` (`src/lib/meli-auth.ts`): prefer **`MELI_CLIENT_ID` + `MELI_CLIENT_SECRET`** (client_credentials → APP_USR ~6h, cached in-module); optional fallback `MERCADOLIBRE_ACCESS_TOKEN`. Bearer se envia en llamadas API; **search sigue pudiendo devolver 403** desde IPs serverless.
 2. Si la API falla (p.ej. **403** desde IPs datacenter) → HTML `https://listado.mercadolibre.com.mx/{slug}` (JSON-LD / precios embebidos). Fragil; a menudo **account-verification**.
-3. **Fallback Liverpool** — HTML `https://www.liverpool.com.mx/tienda?s=…` parseando records `productId`/`title`/`salePrice` (RSC), filtrando accesorios. Fragil si Liverpool cambia markup.
+3. **Fallback Liverpool** — HTML `https://www.liverpool.com.mx/tienda?s=…` parseando records `productId`/`title`/`salePrice` (RSC), filtrando accesorios. Fragil si Liverpool cambia markup. Sigue activo cuando ML esta bloqueado.
 
-Errores → `null` + `console.warn` (no throw). Timeout ~12s, User-Agent navegador. Job `check-alerts` / cron Vercel usan `createPriceFetcher()`; ~750ms entre alertas.
+Errores → `null` + `console.warn` (no throw). Timeout ~12s, User-Agent navegador. Job `check-alerts` / cron Vercel usan `createPriceFetcher()` (mint interno); ~750ms entre alertas.
 
 **Mock:** `PRICE_FETCHER=mock` o `USE_MOCK_PRICES=1`.
 

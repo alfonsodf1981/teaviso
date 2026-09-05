@@ -6,12 +6,18 @@
  * - listado HTML → 302 account-verification (bot wall)
  * - items/products API often also 403 without app token
  *
+ * Auth: getMeliAccessToken() mints APP_USR via client_credentials when
+ * MELI_CLIENT_ID + MELI_CLIENT_SECRET are set; else MERCADOLIBRE_ACCESS_TOKEN.
+ * Search still often 403; Liverpool fallback remains.
+ *
  * When the product string is a ML URL or MLM id, we try the item/product
  * endpoints first (sometimes work). Otherwise search → HTML → null.
  * MxPriceFetcher then falls back to Liverpool.com.mx HTML (salePrice RSC)
  * when ML is blocked — so alerts can still get a MXN quote from this host.
  * Use PRICE_FETCHER=mock or USE_MOCK_PRICES=1 for demos.
  */
+
+import { getMeliAccessToken } from "./meli-auth";
 
 export type PriceQuote = {
   product: string;
@@ -31,19 +37,12 @@ const FETCH_MS = 12_000;
 const MIN_PRICE = 10;
 const MAX_PRICE = 5_000_000;
 
-function mlAccessToken(): string {
-  const t = (process.env.MERCADOLIBRE_ACCESS_TOKEN || "").trim();
-  if (!t || t === "PENDING" || t === "REPLACE_ME") return "";
-  return t;
-}
-
-function browserHeaders(): HeadersInit {
+function browserHeaders(token?: string): HeadersInit {
   const h: Record<string, string> = {
     "User-Agent": UA,
     Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
     "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
   };
-  const token = mlAccessToken();
   if (token) h.Authorization = `Bearer ${token}`;
   return h;
 }
@@ -170,9 +169,12 @@ function parsePricesFromHtml(html: string): { price: number | null; permalink?: 
   return { price: lowestSane(prices), permalink };
 }
 
-async function fetchJson(url: string): Promise<{ ok: boolean; status: number; json: unknown }> {
+async function fetchJson(
+  url: string,
+  token?: string
+): Promise<{ ok: boolean; status: number; json: unknown }> {
   const res = await fetch(url, {
-    headers: { ...browserHeaders(), Accept: "application/json" },
+    headers: { ...browserHeaders(token), Accept: "application/json" },
     signal: AbortSignal.timeout(FETCH_MS),
     redirect: "follow",
   });
@@ -185,9 +187,12 @@ async function fetchJson(url: string): Promise<{ ok: boolean; status: number; js
   return { ok: res.ok, status: res.status, json };
 }
 
-async function fetchText(url: string): Promise<{ ok: boolean; status: number; text: string; finalUrl: string }> {
+async function fetchText(
+  url: string,
+  token?: string
+): Promise<{ ok: boolean; status: number; text: string; finalUrl: string }> {
   const res = await fetch(url, {
-    headers: browserHeaders(),
+    headers: browserHeaders(token),
     signal: AbortSignal.timeout(FETCH_MS),
     redirect: "follow",
   });
@@ -232,14 +237,23 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
     const trimmed = product.trim();
     if (!trimmed) return null;
 
+    let token = "";
+    try {
+      token = await getMeliAccessToken();
+    } catch (err) {
+      this.warnOnce(
+        `no se pudo mint ML token: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+
     try {
       const ml = extractMlId(trimmed);
       if (ml) {
-        const byId = await this.fetchById(ml.kind, ml.id, trimmed, checkedAt);
+        const byId = await this.fetchById(ml.kind, ml.id, trimmed, checkedAt, token);
         if (byId) return byId;
       }
 
-      const bySearch = await this.fetchBySearch(trimmed, checkedAt);
+      const bySearch = await this.fetchBySearch(trimmed, checkedAt, token);
       if (bySearch) return bySearch;
     } catch (err) {
       this.warnOnce(
@@ -250,7 +264,7 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
 
     this.warnOnce(
       `sin precio para "${trimmed}" (API 403 / listado bot-wall frecuentes desde IPs serverless). ` +
-        `Pega URL o id MLM del producto, o usa PRICE_FETCHER=mock. App token ML pendiente.`
+        `Pega URL o id MLM del producto, o usa PRICE_FETCHER=mock. Prefer MELI_CLIENT_ID+SECRET.`
     );
     return null;
   }
@@ -259,10 +273,11 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
     kind: "item" | "product",
     id: string,
     product: string,
-    checkedAt: Date
+    checkedAt: Date,
+    token: string
   ): Promise<PriceQuote | null> {
     if (kind === "item") {
-      const { ok, json } = await fetchJson(`https://api.mercadolibre.com/items/${id}`);
+      const { ok, json } = await fetchJson(`https://api.mercadolibre.com/items/${id}`, token);
       if (ok && json && typeof json === "object") {
         const row = json as Record<string, unknown>;
         const price = sanePrice(row.price);
@@ -279,7 +294,7 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
     }
 
     // Catalog product → buy box / items
-    const prod = await fetchJson(`https://api.mercadolibre.com/products/${id}`);
+    const prod = await fetchJson(`https://api.mercadolibre.com/products/${id}`, token);
     if (prod.ok && prod.json && typeof prod.json === "object") {
       const row = prod.json as Record<string, unknown>;
       const buyBox = row.buy_box_winner as Record<string, unknown> | undefined;
@@ -296,7 +311,7 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
       }
     }
 
-    const items = await fetchJson(`https://api.mercadolibre.com/products/${id}/items`);
+    const items = await fetchJson(`https://api.mercadolibre.com/products/${id}/items`, token);
     if (items.ok && items.json && typeof items.json === "object") {
       const results = (items.json as { results?: unknown[] }).results;
       if (Array.isArray(results)) {
@@ -321,11 +336,15 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
     return null;
   }
 
-  private async fetchBySearch(query: string, checkedAt: Date): Promise<PriceQuote | null> {
+  private async fetchBySearch(
+    query: string,
+    checkedAt: Date,
+    token: string
+  ): Promise<PriceQuote | null> {
     // Official search API (often 403 from datacenter IPs)
     const apiUrl = `https://api.mercadolibre.com/sites/MLM/search?q=${encodeURIComponent(query)}&limit=20`;
     try {
-      const { ok, status, json } = await fetchJson(apiUrl);
+      const { ok, status, json } = await fetchJson(apiUrl, token);
       if (ok && json && typeof json === "object") {
         const results = (json as { results?: unknown[] }).results;
         if (Array.isArray(results) && results.length) {
@@ -359,7 +378,7 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
       : `https://listado.mercadolibre.com.mx/${encodeURIComponent(query)}`;
 
     try {
-      const { text, finalUrl } = await fetchText(listadoUrl);
+      const { text, finalUrl } = await fetchText(listadoUrl, token);
       if (/account-verification|suspicious-traffic/i.test(finalUrl) || /account-verification|suspicious-traffic/i.test(text.slice(0, 2000))) {
         return null;
       }
