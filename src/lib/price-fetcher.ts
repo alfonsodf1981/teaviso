@@ -8,6 +8,8 @@
  *
  * When the product string is a ML URL or MLM id, we try the item/product
  * endpoints first (sometimes work). Otherwise search → HTML → null.
+ * MxPriceFetcher then falls back to Liverpool.com.mx HTML (salePrice RSC)
+ * when ML is blocked — so alerts can still get a MXN quote from this host.
  * Use PRICE_FETCHER=mock or USE_MOCK_PRICES=1 for demos.
  */
 
@@ -29,12 +31,19 @@ const FETCH_MS = 12_000;
 const MIN_PRICE = 10;
 const MAX_PRICE = 5_000_000;
 
+function mlAccessToken(): string {
+  return (process.env.MERCADOLIBRE_ACCESS_TOKEN || "").trim();
+}
+
 function browserHeaders(): HeadersInit {
-  return {
+  const h: Record<string, string> = {
     "User-Agent": UA,
     Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
     "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
   };
+  const token = mlAccessToken();
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
 }
 
 function sanePrice(n: unknown): number | null {
@@ -361,15 +370,81 @@ export class MercadoLibreMxPriceFetcher implements PriceFetcher {
   }
 }
 
-/** Alias: URL/id-aware hybrid (same as MercadoLibreMxPriceFetcher). */
-export class MxPriceFetcher extends MercadoLibreMxPriceFetcher {}
+/**
+ * Liverpool.com.mx PLP HTML fallback when ML is bot-walled from the host.
+ * Parses escaped RSC `salePrice` fields — fragile if Liverpool changes markup.
+ */
+export class LiverpoolMxPriceFetcher implements PriceFetcher {
+  async fetchPrice(product: string, _category?: string): Promise<PriceQuote | null> {
+    const trimmed = product.trim();
+    if (!trimmed) return null;
+    const checkedAt = new Date();
+    const url = `https://www.liverpool.com.mx/tienda?s=${encodeURIComponent(trimmed)}`;
+    try {
+      const { text, status } = await fetchText(url);
+      if (status >= 400) {
+        console.warn(`[LiverpoolMxPriceFetcher] HTTP ${status} for "${trimmed}"`);
+        return null;
+      }
+      if (
+        text.length < 50_000 &&
+        /verifica tu identidad|cf-challenge|captcha/i.test(text)
+      ) {
+        console.warn(`[LiverpoolMxPriceFetcher] challenge page for "${trimmed}"`);
+        return null;
+      }
+      const prices: number[] = [];
+      for (const m of text.matchAll(/salePrice\\?":\s*\\?"?(\d+(?:\.\d+)?)/g)) {
+        const p = sanePrice(m[1]);
+        if (p != null) prices.push(p);
+      }
+      for (const m of text.matchAll(/"salePrice"\s*:\s*"?(\d+(?:\.\d+)?)"?/g)) {
+        const p = sanePrice(m[1]);
+        if (p != null) prices.push(p);
+      }
+      const price = lowestSane(prices);
+      if (price == null) {
+        console.warn(`[LiverpoolMxPriceFetcher] no prices for "${trimmed}"`);
+        return null;
+      }
+      let source = url;
+      const path = text.match(/\/tienda\/pdp\/[^\s"'\\]+/);
+      if (path) {
+        source = `https://www.liverpool.com.mx${path[0].replace(/\\+$/, "")}`;
+      }
+      return { product: trimmed, price, currency: "MXN", source, checkedAt };
+    } catch (err) {
+      console.warn(
+        `[LiverpoolMxPriceFetcher] failed for "${trimmed}":`,
+        err instanceof Error ? err.message : err
+      );
+      return null;
+    }
+  }
+}
+
+/**
+ * ML first (API + listado HTML), then Liverpool HTML. Modest delay between sources.
+ */
+export class MxPriceFetcher implements PriceFetcher {
+  private ml = new MercadoLibreMxPriceFetcher();
+  private liverpool = new LiverpoolMxPriceFetcher();
+
+  async fetchPrice(product: string, category?: string): Promise<PriceQuote | null> {
+    const mlQuote = await this.ml.fetchPrice(product, category);
+    if (mlQuote) return mlQuote;
+    await new Promise((r) => setTimeout(r, 400));
+    return this.liverpool.fetchPrice(product, category);
+  }
+}
 
 export function createPriceFetcher(): PriceFetcher {
   const mode = (process.env.PRICE_FETCHER || "").toLowerCase();
   if (mode === "mock" || process.env.USE_MOCK_PRICES === "1") {
     return new MockPriceFetcher();
   }
-  return new MercadoLibreMxPriceFetcher();
+  // Default: real MX chain (ML → Liverpool). Prefer production intent.
+  return new MxPriceFetcher();
 }
 
 export const priceFetcher = createPriceFetcher();

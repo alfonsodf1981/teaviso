@@ -13,6 +13,7 @@ import {
 
 const prisma = new PrismaClient();
 const fetcher = createPriceFetcher();
+const ALERT_FETCH_GAP_MS = 750;
 const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 
@@ -65,7 +66,11 @@ async function main() {
   console.log(`[check-alerts] ${alerts.length} active alert(s)`);
 
   let hits = 0;
+  let index = 0;
   for (const alert of alerts) {
+    if (index++ > 0) {
+      await new Promise((r) => setTimeout(r, ALERT_FETCH_GAP_MS));
+    }
     const quote = await fetcher.fetchPrice(alert.product, alert.category);
     if (!quote) {
       console.warn(`  no quote for ${alert.product}`);

@@ -34,21 +34,19 @@ Sin keys: modo DEMO.
 Campos: product, category, targetPrice, emailOn, pushOn, paused.
 API: GET/POST /api/alerts y GET/PATCH/DELETE /api/alerts/[id].
 
-## PriceFetcher (Mercado Libre MX)
-`src/lib/price-fetcher.ts` — interfaz `PriceFetcher` + `MockPriceFetcher` + `MercadoLibreMxPriceFetcher` (híbrido).
+## PriceFetcher MX (robot)
 
-Comportamiento real (`createPriceFetcher()` / `priceFetcher`):
-1. Si el producto es URL de mercadolibre.com.mx o id `MLM…` → API `items` / `products`.
-2. Si no → API `sites/MLM/search`, y si falla → HTML de `listado.mercadolibre.com.mx/{slug}`.
-3. Si todo falla → `null` (con un `console.warn`).
+Interfaz PriceFetcher + createPriceFetcher() en src/lib/price-fetcher.ts.
 
-**Limitación honesta:** desde IPs serverless / datacenter la search API suele devolver **403** y el listado redirige a **account-verification** (bot wall). Sin app token de ML, en producción a menudo no hay precio. Workarounds MVP: pegar la URL o id MLM del producto como nombre, o demos con mock.
+Fuente legal primaria: API oficial Mercado Libre Mexico (MLM) con OAuth Bearer.
 
-Env:
-- `PRICE_FETCHER=mock` o `USE_MOCK_PRICES=1` → mock determinista (demos / local sin red).
-- Default → `MercadoLibreMxPriceFetcher`.
+- MERCADOLIBRE_ACCESS_TOKEN (requerido en prod)
+- CRON_SECRET (protege /api/cron/check-alerts)
+- PRICE_FETCHER=mock o USE_MOCK_PRICES=1 solo demos
 
-Siguiente paso: app token oficial de Mercado Libre para search estable.
+Alta de app: https://developers.mercadolibre.com.mx/
+Search: GET /sites/MLM/search con Authorization Bearer.
+Cron Vercel cada 6h. Sin token en production: NullPriceFetcher.
 
 ## Browser push stub/skeleton
 El flag pushOn se guarda y se muestra en UI; esqueleto en src/lib/push.ts.
