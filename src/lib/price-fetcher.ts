@@ -54,9 +54,18 @@ function sanePrice(n: unknown): number | null {
 }
 
 function lowestSane(prices: number[]): number | null {
-  const ok = prices.filter((p) => Number.isFinite(p) && p >= MIN_PRICE && p <= MAX_PRICE);
+  const ok = prices
+    .filter((p) => Number.isFinite(p) && p >= MIN_PRICE && p <= MAX_PRICE)
+    .sort((a, b) => a - b);
   if (!ok.length) return null;
-  return Math.min(...ok);
+  // Drop accessory noise (cases/cables) when the result set spans orders of magnitude.
+  if (ok.length >= 4) {
+    const mid = ok[Math.floor(ok.length / 2)]!;
+    const floor = Math.max(MIN_PRICE, mid * 0.45);
+    const clustered = ok.filter((p) => p >= floor);
+    if (clustered.length) return clustered[0]!;
+  }
+  return ok[0]!;
 }
 
 /** Extract MLM item or catalog product id from free text / URL. */
@@ -393,26 +402,84 @@ export class LiverpoolMxPriceFetcher implements PriceFetcher {
         console.warn(`[LiverpoolMxPriceFetcher] challenge page for "${trimmed}"`);
         return null;
       }
-      const prices: number[] = [];
+
+      const normQuery = trimmed
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const tokens = normQuery.split(/\s+/).filter((w) => w.length >= 2);
+
+      const ACCESSORY =
+        /\b(funda|case|cable|mica|protector|cargador|aud[ií]fonos?|cover|estuche|glass|templado|magsafe|pop[-\s]?socket|soporte|skin)\b/i;
+
+      type Cand = { price: number; source: string; score: number; title: string };
+      const cands: Cand[] = [];
+
+      const pushRec = (id: string, titleRaw: string, priceRaw: string) => {
+        const price = sanePrice(priceRaw);
+        if (price == null) return;
+        const title = titleRaw.replace(/\\u[\da-f]{4}/gi, (u) =>
+          String.fromCharCode(parseInt(u.slice(2), 16))
+        );
+        const norm = title
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        let score = tokens.reduce((n, tok) => n + (norm.includes(tok) ? 1 : 0), 0);
+        if (norm.includes(normQuery)) score += 3;
+        if (ACCESSORY.test(norm)) score -= 5;
+        if (score <= 0) return;
+        cands.push({
+          price,
+          title,
+          score,
+          source: `https://www.liverpool.com.mx/tienda/pdp/${id}`,
+        });
+      };
+
+      // Escaped RSC records: productId + title + salePrice
+      const recRe =
+        /productId\\?":\s*\\?"(\d+)\\?".{0,120}?title\\?":\s*\\?"([^\\"]{3,160})\\?".{0,220}?salePrice\\?":\s*\\?"?(\d+(?:\.\d+)?)/gi;
+      for (const m of text.matchAll(recRe)) pushRec(m[1]!, m[2]!, m[3]!);
+
+      const recRe2 =
+        /"productId"\s*:\s*"(\d+)"[\s\S]{0,120}?"title"\s*:\s*"([^"]{3,160})"[\s\S]{0,220}?"salePrice"\s*:\s*(\d+(?:\.\d+)?)/gi;
+      for (const m of text.matchAll(recRe2)) pushRec(m[1]!, m[2]!, m[3]!);
+
+      if (cands.length) {
+        cands.sort((a, b) => b.score - a.score || a.price - b.price);
+        const topScore = cands[0]!.score;
+        const top = cands.filter((c) => c.score === topScore);
+        const price = lowestSane(top.map((c) => c.price));
+        const best =
+          (price != null && top.find((c) => c.price === price)) || top[0]!;
+        const id = best.source.split("/").pop()!;
+        const slugPath = text.match(
+          new RegExp(`/tienda/pdp/[a-z0-9-]+/${id}[^\\s"'\\\\]*`, "i")
+        );
+        const source = slugPath
+          ? `https://www.liverpool.com.mx${slugPath[0].replace(/\\+$/, "")}`
+          : best.source;
+        return {
+          product: trimmed,
+          price: best.price,
+          currency: "MXN",
+          source,
+          checkedAt,
+        };
+      }
+
+      const allPrices: number[] = [];
       for (const m of text.matchAll(/salePrice\\?":\s*\\?"?(\d+(?:\.\d+)?)/g)) {
-        const p = sanePrice(m[1]);
-        if (p != null) prices.push(p);
+        const pr = sanePrice(m[1]);
+        if (pr != null) allPrices.push(pr);
       }
-      for (const m of text.matchAll(/"salePrice"\s*:\s*"?(\d+(?:\.\d+)?)"?/g)) {
-        const p = sanePrice(m[1]);
-        if (p != null) prices.push(p);
-      }
-      const price = lowestSane(prices);
+      const price = lowestSane(allPrices);
       if (price == null) {
         console.warn(`[LiverpoolMxPriceFetcher] no prices for "${trimmed}"`);
         return null;
       }
-      let source = url;
-      const path = text.match(/\/tienda\/pdp\/[^\s"'\\]+/);
-      if (path) {
-        source = `https://www.liverpool.com.mx${path[0].replace(/\\+$/, "")}`;
-      }
-      return { product: trimmed, price, currency: "MXN", source, checkedAt };
+      return { product: trimmed, price, currency: "MXN", source: url, checkedAt };
     } catch (err) {
       console.warn(
         `[LiverpoolMxPriceFetcher] failed for "${trimmed}":`,
@@ -423,9 +490,6 @@ export class LiverpoolMxPriceFetcher implements PriceFetcher {
   }
 }
 
-/**
- * ML first (API + listado HTML), then Liverpool HTML. Modest delay between sources.
- */
 export class MxPriceFetcher implements PriceFetcher {
   private ml = new MercadoLibreMxPriceFetcher();
   private liverpool = new LiverpoolMxPriceFetcher();

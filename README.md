@@ -34,19 +34,20 @@ Sin keys: modo DEMO.
 Campos: product, category, targetPrice, emailOn, pushOn, paused.
 API: GET/POST /api/alerts y GET/PATCH/DELETE /api/alerts/[id].
 
-## PriceFetcher MX (robot)
+## PriceFetcher (MX)
 
-Interfaz PriceFetcher + createPriceFetcher() en src/lib/price-fetcher.ts.
+Interfaz `PriceFetcher` / `PriceQuote` + `createPriceFetcher()` / `priceFetcher` en `src/lib/price-fetcher.ts`.
 
-Fuente legal primaria: API oficial Mercado Libre Mexico (MLM) con OAuth Bearer.
+**Default:** `MxPriceFetcher` (produccion):
+1. **Mercado Libre MX** — URL/id `MLM…` → API `items`/`products`; si no → `GET https://api.mercadolibre.com/sites/MLM/search?q=…&limit=20` (JSON publico). Si existe `MERCADOLIBRE_ACCESS_TOKEN`, se envia `Authorization: Bearer` (mejora cuotas; la search sigue pudiendo fallar).
+2. Si la API falla (p.ej. **403** desde IPs datacenter) → HTML `https://listado.mercadolibre.com.mx/{slug}` (JSON-LD / precios embebidos). Fragil; a menudo **account-verification**.
+3. **Fallback Liverpool** — HTML `https://www.liverpool.com.mx/tienda?s=…` parseando records `productId`/`title`/`salePrice` (RSC), filtrando accesorios. Fragil si Liverpool cambia markup.
 
-- MERCADOLIBRE_ACCESS_TOKEN (requerido en prod)
-- CRON_SECRET (protege /api/cron/check-alerts)
-- PRICE_FETCHER=mock o USE_MOCK_PRICES=1 solo demos
+Errores → `null` + `console.warn` (no throw). Timeout ~12s, User-Agent navegador. Job `check-alerts` / cron Vercel usan `createPriceFetcher()`; ~750ms entre alertas.
 
-Alta de app: https://developers.mercadolibre.com.mx/
-Search: GET /sites/MLM/search con Authorization Bearer.
-Cron Vercel cada 6h. Sin token en production: NullPriceFetcher.
+**Mock:** `PRICE_FETCHER=mock` o `USE_MOCK_PRICES=1`.
+
+Opcional: `CRON_SECRET` protege `POST/GET /api/cron/check-alerts`. App ML: https://developers.mercadolibre.com.mx/
 
 ## Browser push stub/skeleton
 El flag pushOn se guarda y se muestra en UI; esqueleto en src/lib/push.ts.
