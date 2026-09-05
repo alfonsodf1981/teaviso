@@ -32,7 +32,9 @@ const MIN_PRICE = 10;
 const MAX_PRICE = 5_000_000;
 
 function mlAccessToken(): string {
-  return (process.env.MERCADOLIBRE_ACCESS_TOKEN || "").trim();
+  const t = (process.env.MERCADOLIBRE_ACCESS_TOKEN || "").trim();
+  if (!t || t === "PENDING" || t === "REPLACE_ME") return "";
+  return t;
 }
 
 function browserHeaders(): HeadersInit {

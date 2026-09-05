@@ -8,7 +8,7 @@ UI soft-3D: fondo #F3F4F6, acento naranja #FF6A3D, CTA verde #16A34A, cards glas
 - Next.js + TypeScript + Tailwind
 - Prisma + PostgreSQL (required for Vercel; SQLite will not work on serverless)
 - NextAuth magic link
-- Job check-alerts cada 6 horas
+- Job check-alerts diario (Hobby: 1 cron/día, 14:00 UTC)
 
 ## Setup
 1. Copia env.example al archivo de entorno local
